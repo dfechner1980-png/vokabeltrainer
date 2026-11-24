@@ -11,8 +11,6 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app import ai_import
-
 DB_PATH = os.environ.get("DB_PATH", "/data/vokabeln.db")
 ADMIN_PIN = os.environ.get("ADMIN_PIN", "")
 CASE_SENSITIVE = os.environ.get("CASE_SENSITIVE", "false").lower() in ("1", "true", "yes")
@@ -199,15 +197,6 @@ class WordIn(BaseModel):
     en: str = Field(min_length=1)
 
 
-class ImageIn(BaseModel):
-    media_type: str = Field(pattern=r"^image/(jpeg|png|webp|gif)$")
-    data: str
-
-
-class PhotoImportIn(BaseModel):
-    images: list[ImageIn] = Field(min_length=1, max_length=10)
-
-
 class ImportWord(BaseModel):
     de: str
     en: str
@@ -242,16 +231,7 @@ class FinishIn(BaseModel):
 # --------------------------------------------------------------- Routes
 @app.get("/api/config")
 def config():
-    return {"pin_required": bool(ADMIN_PIN), "case_sensitive": CASE_SENSITIVE, "ai_import": ai_import.enabled()}
-
-
-@app.post("/api/import/photo", dependencies=[Depends(require_admin)])
-def import_photo(body: PhotoImportIn):
-    """Erkennt Vokabeln auf Fotos. Speichert nichts – die Vorschau wird danach über /api/import/json übernommen."""
-    try:
-        return ai_import.extract([i.model_dump() for i in body.images])
-    except ai_import.AIImportError as e:
-        raise HTTPException(502, str(e))
+    return {"pin_required": bool(ADMIN_PIN), "case_sensitive": CASE_SENSITIVE}
 
 
 @app.post("/api/import/json", dependencies=[Depends(require_admin)])

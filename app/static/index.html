@@ -117,21 +117,26 @@
 
       <div id="admin-main" class="hidden">
         <div class="card">
-          <h2>📷 Vokabeln importieren</h2>
-          <div id="photo-area">
-            <p class="muted small">Vokabelseite fotografieren (gerne mehrere Fotos) – die KI erkennt die Vokabeln, du prüfst sie und importierst.</p>
-            <label class="file-btn primary">📷 Foto aufnehmen / auswählen
-              <input id="photo-input" type="file" accept="image/*" multiple hidden>
-            </label>
-            <div id="photo-thumbs" class="thumbs"></div>
-            <div class="row"><button id="btn-recognize" class="primary hidden">Vokabeln erkennen</button></div>
-          </div>
-          <p id="photo-off" class="muted small hidden">Foto-Erkennung ist nicht eingerichtet (Variable <b>ANTHROPIC_API_KEY</b> im Container fehlt). Der JSON-Import unten funktioniert trotzdem.</p>
-          <details id="json-box">
-            <summary>JSON einfügen</summary>
-            <textarea id="json-text" rows="6" placeholder='{"name": "Unit 5", "words": [{"de": "Katze", "en": "cat"}]}'></textarea>
-            <div class="row"><button id="btn-json" class="secondary">In Vorschau übernehmen</button></div>
+          <h2>📥 Vokabeln importieren (JSON)</h2>
+          <p class="muted small">Vokabelseite mit dem KI-Tool deiner Wahl (ChatGPT, Gemini, Claude, Copilot …) in JSON umwandeln lassen und das Ergebnis hier einfügen.</p>
+          <details id="prompt-box">
+            <summary>Anleitung für die KI (zum Kopieren)</summary>
+            <pre id="ai-prompt">Lies die Vokabeln auf dem Foto aus und gib sie ausschließlich als JSON in genau diesem Format zurück, ohne weiteren Text:
+
+{"name": "Name der Unit", "words": [{"de": "deutsches Wort", "en": "englisches Wort"}]}
+
+Regeln:
+- "de" = deutsche Bedeutung, "en" = englischer Ausdruck genau wie im Buch
+- Lautschrift, Beispielsätze und Seitenzahlen weglassen
+- mehrere deutsche Bedeutungen mit Komma trennen: "Schule, Unterricht"
+- mehrere englische Varianten mit " / " trennen: "(to) run / (to) race"
+- Verben mit "to" so schreiben: "(to) go"
+- "name" = Überschrift der Unit, falls erkennbar, sonst leer lassen</pre>
+            <div class="row"><button id="btn-copy-prompt" class="secondary">📋 Anleitung kopieren</button></div>
+            <p class="muted small">So geht’s: Foto der Vokabelseite in das KI-Tool hochladen, die Anleitung dazu einfügen, Antwort kopieren und unten einfügen.</p>
           </details>
+          <textarea id="json-text" rows="7" placeholder='{"name": "Unit 5", "words": [{"de": "Katze", "en": "cat"}]}'></textarea>
+          <div class="row"><button id="btn-json" class="primary">Vorschau anzeigen</button></div>
           <p id="import-msg" class="msg"></p>
 
           <div id="import-preview" class="hidden">

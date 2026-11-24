@@ -11,7 +11,6 @@ services:
       - ADMIN_PIN=1234          # PIN für den Bereich "Verwalten" – bitte ändern (leer = keine PIN)
       - CASE_SENSITIVE=false    # true = Groß-/Kleinschreibung muss stimmen
       - TZ=Europe/Berlin
-      - ANTHROPIC_API_KEY=      # für den Foto-Import (leer = aus)
       - PUID=99
       - PGID=100
     volumes:

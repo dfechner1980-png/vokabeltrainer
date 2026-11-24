@@ -437,8 +437,6 @@ $("btn-delete-set").onclick = async () => {
 };
 
 // ------------------------------------------------------------ Import (Foto / JSON)
-let photos = [];
-
 function fillImportTargets(sets) {
   const sel = $("import-target");
   const keep = sel.value;
@@ -446,71 +444,30 @@ function fillImportTargets(sets) {
   for (const s of sets) sel.append(el("option", { value: s.id, textContent: `an „${s.name}“ anhängen` }));
   if ([...sel.options].some((o) => o.value === keep)) sel.value = keep;
   $("import-name").classList.toggle("hidden", sel.value !== "");
-  $("photo-area").classList.toggle("hidden", !state.config.ai_import);
-  $("photo-off").classList.toggle("hidden", !!state.config.ai_import);
 }
 $("import-target").onchange = () => $("import-name").classList.toggle("hidden", $("import-target").value !== "");
 
-async function shrinkImage(file) {
-  // Handyfotos verkleinern (lange Kante max. 2000 px) – spart Upload und API-Kosten
-  const img = await createImageBitmap(file);
-  const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
-  const c = document.createElement("canvas");
-  c.width = Math.round(img.width * scale);
-  c.height = Math.round(img.height * scale);
-  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-  const url = c.toDataURL("image/jpeg", 0.85);
-  return { media_type: "image/jpeg", data: url.split(",")[1], preview: url };
-}
-
-$("photo-input").onchange = async (e) => {
-  msg("import-msg", "");
-  for (const f of e.target.files) {
-    try { photos.push(await shrinkImage(f)); } catch { msg("import-msg", `„${f.name}“ konnte nicht gelesen werden.`); }
-  }
-  e.target.value = "";
-  renderThumbs();
-};
-
-function renderThumbs() {
-  const box = $("photo-thumbs");
-  box.replaceChildren();
-  photos.forEach((p, i) => {
-    const x = el("button", { className: "thumb-x", title: "Entfernen", textContent: "✕" });
-    x.onclick = () => { photos.splice(i, 1); renderThumbs(); };
-    box.append(el("div", { className: "thumb" }, el("img", { src: p.preview }), x));
-  });
-  $("btn-recognize").classList.toggle("hidden", !photos.length);
-  $("btn-recognize").textContent = photos.length > 1 ? `Vokabeln aus ${photos.length} Fotos erkennen` : "Vokabeln erkennen";
-}
-
-$("btn-recognize").onclick = async () => {
-  const btn = $("btn-recognize");
-  btn.disabled = true;
-  btn.textContent = "⏳ KI liest die Vokabeln …";
-  msg("import-msg", "");
+$("btn-copy-prompt").onclick = async () => {
+  const text = $("ai-prompt").textContent;
   try {
-    const res = await api("/api/import/photo", {
-      method: "POST",
-      body: { images: photos.map(({ media_type, data }) => ({ media_type, data })) },
-    });
-    if (!res.words.length) return msg("import-msg", "Auf den Fotos wurden keine Vokabeln erkannt.");
-    showPreview(res.name, res.words);
-    msg("import-msg", `${res.words.length} Vokabeln erkannt – bitte prüfen.` +
-      (res.truncated ? " Achtung: Liste evtl. unvollständig, lieber weniger Fotos auf einmal." : ""), !res.truncated);
-    photos = [];
-    renderThumbs();
-  } catch (err) {
-    if (err.status === 401) throw err;
-    msg("import-msg", err.message);
-  } finally {
-    btn.disabled = false;
-    renderThumbs();
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Fallback (z. B. ohne HTTPS): Text markieren, damit er manuell kopiert werden kann
+    const r = document.createRange(); r.selectNodeContents($("ai-prompt"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    document.execCommand("copy");
   }
+  $("btn-copy-prompt").textContent = "✅ Kopiert";
+  setTimeout(() => ($("btn-copy-prompt").textContent = "📋 Anleitung kopieren"), 2000);
 };
 
 function parseImportJson(text) {
-  const data = JSON.parse(text);
+  // KI-Antworten enthalten oft ```json … ``` oder Text drumherum – nur den JSON-Teil nehmen
+  text = text.replace(/```(?:json)?/gi, "");
+  const start = text.search(/[\[{]/);
+  const end = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
+  if (start < 0 || end < start) throw new Error("kein JSON gefunden");
+  const data = JSON.parse(text.slice(start, end + 1));
   const list = Array.isArray(data) ? data : data.words || data.vokabeln || [];
   const words = list.map((w) => Array.isArray(w)
     ? { de: String(w[0] ?? ""), en: String(w[1] ?? "") }
@@ -523,7 +480,6 @@ $("btn-json").onclick = () => {
     const { name, words } = parseImportJson($("json-text").value);
     if (!words.length) return msg("import-msg", "Im JSON wurden keine Vokabeln gefunden.");
     showPreview(name, words);
-    $("json-box").open = false;
     $("json-text").value = "";
     msg("import-msg", `${words.length} Vokabeln übernommen – bitte prüfen.`, true);
   } catch (e) {

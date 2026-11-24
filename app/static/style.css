@@ -146,8 +146,9 @@ td.need { color: var(--bad); font-weight: 700; }
 .thumb { position: relative; width: 90px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; }
 .thumb-x { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.6); color: #fff; padding: 2px 7px; border-radius: 50%; font-size: .8rem; }
-#json-box { margin-top: 14px; }
-#json-box summary { cursor: pointer; color: var(--muted); }
+#prompt-box { margin: 10px 0; }
+#prompt-box summary { cursor: pointer; color: var(--primary); font-weight: 600; }
+#ai-prompt { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: .85rem; margin: 10px 0 0; }
 select { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
 #import-preview .row.spread select { flex: 1; min-width: 180px; }
 button:disabled { opacity: .6; cursor: wait; }

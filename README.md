@@ -65,18 +65,34 @@ docker compose up -d     # nutzt das fertige Image; zum lokalen Bauen in docker-
 
 Groß- und Kleinschreibung wird standardmäßig nicht als Fehler gewertet. Die App weist aber darauf hin, zum Beispiel bei „monday“ statt „Monday“. Mit `CASE_SENSITIVE=true` muss die Schreibweise exakt stimmen.
 
-## Vokabeln importieren (Foto oder JSON)
+## Vokabeln importieren (JSON)
 
-Unter **Verwalten → 📷 Vokabeln importieren**:
+Unter **Verwalten → 📥 Vokabeln importieren** lässt sich JSON einfügen, das ein beliebiges KI-Tool aus einem Foto erzeugt hat (ChatGPT, Gemini, Claude, Copilot …):
 
-1. **Foto aufnehmen / auswählen.** Auf dem Handy öffnet sich direkt die Kamera. Mehrere Fotos sind möglich, etwa zwei Buchseiten.
-2. **Vokabeln erkennen.** Claude liest die Vokabeln aus. Lautschrift und Beispielsätze werden weggelassen, Verben erscheinen als „(to) go“.
-3. **Vorschau prüfen.** Einträge lassen sich korrigieren, löschen oder ergänzen. Dann als neuen Satz anlegen oder an einen vorhandenen Satz anhängen.
+1. Das Foto der Vokabelseite im KI-Tool hochladen.
+2. Die Anleitung dazu einfügen. In der App gibt es dafür den Knopf „Anleitung kopieren“.
+3. Die Antwort kopieren und in das Feld einfügen, dann auf **Vorschau anzeigen** klicken.
+4. Die Einträge prüfen und korrigieren. Danach als neuen Satz anlegen oder an einen vorhandenen Satz anhängen.
 
-Für den Foto-Import braucht der Container einen API-Schlüssel von https://console.anthropic.com als Variable `ANTHROPIC_API_KEY`.
-Eine Buchseite kostet je nach Modell etwa 1–3 Cent. Ohne Schlüssel funktioniert der JSON-Import trotzdem.
+Antworttext oder ```json-Codeblöcke rund um das JSON stören nicht, sie werden automatisch entfernt.
 
-**JSON-Import** (Feld „JSON einfügen“ oder `POST /api/import/json`):
+**Anleitung für die KI:**
+
+```
+Lies die Vokabeln auf dem Foto aus und gib sie ausschließlich als JSON in genau diesem Format zurück, ohne weiteren Text:
+
+{"name": "Name der Unit", "words": [{"de": "deutsches Wort", "en": "englisches Wort"}]}
+
+Regeln:
+- "de" = deutsche Bedeutung, "en" = englischer Ausdruck genau wie im Buch
+- Lautschrift, Beispielsätze und Seitenzahlen weglassen
+- mehrere deutsche Bedeutungen mit Komma trennen: "Schule, Unterricht"
+- mehrere englische Varianten mit " / " trennen: "(to) run / (to) race"
+- Verben mit "to" so schreiben: "(to) go"
+- "name" = Überschrift der Unit, falls erkennbar, sonst leer lassen
+```
+
+**Format:**
 
 ```json
 {
@@ -87,9 +103,9 @@ Eine Buchseite kostet je nach Modell etwa 1–3 Cent. Ohne Schlüssel funktionie
   ]
 }
 ```
-Statt `name` lässt sich `"set_id": 3` angeben, dann werden die Wörter an Satz 3 angehängt. In der Oberfläche akzeptiert das Feld auch eine reine Liste `[["Katze","cat"], ...]`.
+Akzeptiert werden außerdem eine reine Liste `[{"de": "...", "en": "..."}]` und `[["Katze", "cat"], ...]`.
 
-Tipp ohne API-Schlüssel: Das Foto in der Claude-App hochladen und schreiben: „Mach daraus JSON im Format `{"name": ..., "words": [{"de": ..., "en": ...}]}`“. Das Ergebnis dann in „JSON einfügen“ kopieren.
+**API:** `POST /api/import/json` mit dem Header `X-Admin-Pin` und dem Format oben. Statt `name` lässt sich `"set_id": 3` angeben, dann werden die Wörter an Satz 3 angehängt.
 
 ## Einstellungen (docker-compose.yml)
 
@@ -97,8 +113,6 @@ Tipp ohne API-Schlüssel: Das Foto in der Claude-App hochladen und schreiben: �
 |-------------------|---------------------|------------------------------------------------|
 | `ADMIN_PIN`       | leer                | PIN für „Verwalten“ (leer = kein Schutz)        |
 | `CASE_SENSITIVE`  | `false`             | Groß-/Kleinschreibung als Fehler werten         |
-| `ANTHROPIC_API_KEY` | leer              | Claude API-Key für den Foto-Import              |
-| `CLAUDE_MODEL`    | `claude-sonnet-5-5` | Modell für die Foto-Erkennung                   |
 | `DB_PATH`         | `/data/vokabeln.db` | Ort der Datenbank im Container                  |
 
 ## Sicherung
@@ -146,7 +160,6 @@ Die Seite lässt sich auch per Webseiten-Karte (iframe) in ein Dashboard einbind
 | POST    | `/api/check`                 | Antwort prüfen, inkl. Fehleranzeige    |
 | POST    | `/api/finish`                | Ergebnis einer Übung speichern         |
 | GET     | `/api/stats`                 | Statistik (z. B. für Home Assistant)   |
-| POST    | `/api/import/photo` 🔒       | Fotos → erkannte Vokabeln (speichert nichts) |
 | POST    | `/api/import/json` 🔒        | Vokabeln importieren (neu oder anhängen) |
 
 🔒 = benötigt den Header `X-Admin-Pin`, wenn eine PIN gesetzt ist.
