@@ -11,6 +11,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app import ai_import
+
 DB_PATH = os.environ.get("DB_PATH", "/data/vokabeln.db")
 ADMIN_PIN = os.environ.get("ADMIN_PIN", "")
 CASE_SENSITIVE = os.environ.get("CASE_SENSITIVE", "false").lower() in ("1", "true", "yes")
@@ -197,6 +199,28 @@ class WordIn(BaseModel):
     en: str = Field(min_length=1)
 
 
+class ImageIn(BaseModel):
+    media_type: str = Field(pattern=r"^image/(jpeg|png|webp|gif)$")
+    data: str
+
+
+class PhotoImportIn(BaseModel):
+    images: list[ImageIn] = Field(min_length=1, max_length=10)
+
+
+class ImportWord(BaseModel):
+    de: str
+    en: str
+
+
+class JsonImportIn(BaseModel):
+    """Import-Format: {"name": "Unit 5", "words": [{"de": "Katze", "en": "cat"}]}
+    Mit set_id werden die Wörter an einen vorhandenen Satz angehängt."""
+    name: str = ""
+    set_id: int | None = None
+    words: list[ImportWord] = Field(min_length=1)
+
+
 class QuizIn(BaseModel):
     set_ids: list[int]
     only_difficult: bool = False
@@ -218,7 +242,34 @@ class FinishIn(BaseModel):
 # --------------------------------------------------------------- Routes
 @app.get("/api/config")
 def config():
-    return {"pin_required": bool(ADMIN_PIN), "case_sensitive": CASE_SENSITIVE}
+    return {"pin_required": bool(ADMIN_PIN), "case_sensitive": CASE_SENSITIVE, "ai_import": ai_import.enabled()}
+
+
+@app.post("/api/import/photo", dependencies=[Depends(require_admin)])
+def import_photo(body: PhotoImportIn):
+    """Erkennt Vokabeln auf Fotos. Speichert nichts – die Vorschau wird danach über /api/import/json übernommen."""
+    try:
+        return ai_import.extract([i.model_dump() for i in body.images])
+    except ai_import.AIImportError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/import/json", dependencies=[Depends(require_admin)])
+def import_json(body: JsonImportIn):
+    pairs = [(w.de.strip(), w.en.strip()) for w in body.words if w.de.strip() and w.en.strip()]
+    if not pairs:
+        raise HTTPException(400, "Keine gültigen Vokabeln (de + en) enthalten")
+    with db() as con:
+        if body.set_id is not None:
+            if not con.execute("SELECT 1 FROM sets WHERE id=?", (body.set_id,)).fetchone():
+                raise HTTPException(404, "Vokabelsatz nicht gefunden")
+            set_id = body.set_id
+        else:
+            if not body.name.strip():
+                raise HTTPException(400, "Bitte einen Namen für den neuen Vokabelsatz angeben")
+            set_id = con.execute("INSERT INTO sets(name) VALUES (?)", (body.name.strip(),)).lastrowid
+        con.executemany("INSERT INTO words(set_id, de, en) VALUES (?,?,?)", [(set_id, d, e) for d, e in pairs])
+    return {"id": set_id, "added": len(pairs)}
 
 
 @app.post("/api/admin/login", dependencies=[Depends(require_admin)])

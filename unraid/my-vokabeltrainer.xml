@@ -14,6 +14,8 @@
   <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/vokabeltrainer" Mode="rw" Description="Datenbank mit Vokabeln und Statistik" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/vokabeltrainer</Config>
   <Config Name="Admin-PIN" Target="ADMIN_PIN" Default="" Mode="" Description="PIN für den Bereich Verwalten (leer = keine PIN)" Type="Variable" Display="always" Required="false" Mask="true"></Config>
   <Config Name="Groß-/Kleinschreibung prüfen" Target="CASE_SENSITIVE" Default="false" Mode="" Description="true = Schreibweise muss exakt stimmen" Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="Claude API-Key" Target="ANTHROPIC_API_KEY" Default="" Mode="" Description="Für den Foto-Import (console.anthropic.com). Leer = Foto-Import aus." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Claude-Modell" Target="CLAUDE_MODEL" Default="claude-sonnet-5-5" Mode="" Description="Modell für die Foto-Erkennung" Type="Variable" Display="advanced" Required="false" Mask="false">claude-sonnet-5-5</Config>
   <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">Europe/Berlin</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>

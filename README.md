@@ -65,12 +65,40 @@ docker compose up -d     # nutzt das fertige Image; zum lokalen Bauen in docker-
 
 Groß- und Kleinschreibung wird standardmäßig nicht als Fehler gewertet. Die App weist aber darauf hin, zum Beispiel bei „monday“ statt „Monday“. Mit `CASE_SENSITIVE=true` muss die Schreibweise exakt stimmen.
 
+## Vokabeln importieren (Foto oder JSON)
+
+Unter **Verwalten → 📷 Vokabeln importieren**:
+
+1. **Foto aufnehmen / auswählen.** Auf dem Handy öffnet sich direkt die Kamera. Mehrere Fotos sind möglich, etwa zwei Buchseiten.
+2. **Vokabeln erkennen.** Claude liest die Vokabeln aus. Lautschrift und Beispielsätze werden weggelassen, Verben erscheinen als „(to) go“.
+3. **Vorschau prüfen.** Einträge lassen sich korrigieren, löschen oder ergänzen. Dann als neuen Satz anlegen oder an einen vorhandenen Satz anhängen.
+
+Für den Foto-Import braucht der Container einen API-Schlüssel von https://console.anthropic.com als Variable `ANTHROPIC_API_KEY`.
+Eine Buchseite kostet je nach Modell etwa 1–3 Cent. Ohne Schlüssel funktioniert der JSON-Import trotzdem.
+
+**JSON-Import** (Feld „JSON einfügen“ oder `POST /api/import/json`):
+
+```json
+{
+  "name": "Unit 5 – Animals",
+  "words": [
+    {"de": "Katze", "en": "cat"},
+    {"de": "füttern", "en": "(to) feed"}
+  ]
+}
+```
+Statt `name` lässt sich `"set_id": 3` angeben, dann werden die Wörter an Satz 3 angehängt. In der Oberfläche akzeptiert das Feld auch eine reine Liste `[["Katze","cat"], ...]`.
+
+Tipp ohne API-Schlüssel: Das Foto in der Claude-App hochladen und schreiben: „Mach daraus JSON im Format `{"name": ..., "words": [{"de": ..., "en": ...}]}`“. Das Ergebnis dann in „JSON einfügen“ kopieren.
+
 ## Einstellungen (docker-compose.yml)
 
 | Variable          | Standard            | Bedeutung                                      |
 |-------------------|---------------------|------------------------------------------------|
 | `ADMIN_PIN`       | leer                | PIN für „Verwalten“ (leer = kein Schutz)        |
 | `CASE_SENSITIVE`  | `false`             | Groß-/Kleinschreibung als Fehler werten         |
+| `ANTHROPIC_API_KEY` | leer              | Claude API-Key für den Foto-Import              |
+| `CLAUDE_MODEL`    | `claude-sonnet-5-5` | Modell für die Foto-Erkennung                   |
 | `DB_PATH`         | `/data/vokabeln.db` | Ort der Datenbank im Container                  |
 
 ## Sicherung
@@ -118,5 +146,7 @@ Die Seite lässt sich auch per Webseiten-Karte (iframe) in ein Dashboard einbind
 | POST    | `/api/check`                 | Antwort prüfen, inkl. Fehleranzeige    |
 | POST    | `/api/finish`                | Ergebnis einer Übung speichern         |
 | GET     | `/api/stats`                 | Statistik (z. B. für Home Assistant)   |
+| POST    | `/api/import/photo` 🔒       | Fotos → erkannte Vokabeln (speichert nichts) |
+| POST    | `/api/import/json` 🔒        | Vokabeln importieren (neu oder anhängen) |
 
 🔒 = benötigt den Header `X-Admin-Pin`, wenn eine PIN gesetzt ist.
