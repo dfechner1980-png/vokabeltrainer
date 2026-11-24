@@ -2,12 +2,13 @@
 import os
 import re
 import sqlite3
+import json
 import unicodedata
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, datetime
 
-from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -232,6 +233,66 @@ class FinishIn(BaseModel):
 @app.get("/api/config")
 def config():
     return {"pin_required": bool(ADMIN_PIN), "case_sensitive": CASE_SENSITIVE}
+
+
+def parse_ai_text(text: str):
+    """Rohe KI-Antwort -> (name, [(de, en)]). Verträgt ```json-Blöcke und Text drumherum.
+    Ohne JSON wird zeilenweise 'deutsch = englisch' gelesen."""
+    cleaned = re.sub(r"```(?:json)?", "", text, flags=re.I)
+    starts = [i for i in (cleaned.find("{"), cleaned.find("[")) if i >= 0]
+    end = max(cleaned.rfind("}"), cleaned.rfind("]"))
+    if starts and end > min(starts):
+        try:
+            data = json.loads(cleaned[min(starts):end + 1])
+        except ValueError:
+            data = None
+        if data is not None:
+            items = data if isinstance(data, list) else (data.get("words") or data.get("vokabeln") or [])
+            pairs = []
+            for w in items:
+                if isinstance(w, dict):
+                    de = w.get("de") or w.get("deutsch") or ""
+                    en = w.get("en") or w.get("englisch") or w.get("english") or ""
+                elif isinstance(w, (list, tuple)) and len(w) >= 2:
+                    de, en = w[0], w[1]
+                else:
+                    continue
+                de, en = str(de).strip(), str(en).strip()
+                if de and en:
+                    pairs.append((de, en))
+            name = "" if isinstance(data, list) else str(data.get("name") or "").strip()
+            return name, pairs
+    pairs, _ = parse_lines(text)
+    return "", pairs
+
+
+@app.post("/api/import/text", response_class=PlainTextResponse)
+async def import_text(request: Request, name: str = "", set_id: int | None = None):
+    """Für Handy-Shortcuts (z. B. Android "HTTP Shortcuts"): Body = rohe KI-Antwort als Text.
+    Legt einen neuen Satz an (Name aus dem JSON, ?name=... oder Datum) oder hängt mit ?set_id=... an."""
+    raw = (await request.body()).decode("utf-8", errors="replace")
+    if request.headers.get("content-type", "").startswith("application/json"):
+        try:
+            payload = json.loads(raw)
+            if isinstance(payload, dict) and isinstance(payload.get("text"), str):
+                raw = payload["text"]  # {"text": "..."} ebenfalls erlaubt
+        except ValueError:
+            pass
+    found_name, pairs = parse_ai_text(raw)
+    if not pairs:
+        raise HTTPException(400, "Keine Vokabeln gefunden. Erwartet wird JSON mit words: [{de, en}].")
+    with db() as con:
+        if set_id is not None:
+            row = con.execute("SELECT name FROM sets WHERE id=?", (set_id,)).fetchone()
+            if not row:
+                raise HTTPException(404, "Vokabelsatz nicht gefunden")
+            set_name = row["name"]
+        else:
+            set_name = name.strip() or found_name or f"Import {datetime.now():%d.%m.%Y %H:%M}"
+            set_id = con.execute("INSERT INTO sets(name) VALUES (?)", (set_name,)).lastrowid
+        con.executemany("INSERT INTO words(set_id, de, en) VALUES (?,?,?)", [(set_id, d, e) for d, e in pairs])
+    wort = "Vokabel" if len(pairs) == 1 else "Vokabeln"
+    return f"✅ {len(pairs)} {wort} in „{set_name}“ importiert."
 
 
 @app.post("/api/import/json", dependencies=[Depends(require_admin)])

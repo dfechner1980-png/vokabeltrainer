@@ -107,6 +107,33 @@ Akzeptiert werden außerdem eine reine Liste `[{"de": "...", "en": "..."}]` und 
 
 **API:** `POST /api/import/json` mit dem Header `X-Admin-Pin` und dem Format oben. Statt `name` lässt sich `"set_id": 3` angeben, dann werden die Wörter an Satz 3 angehängt.
 
+## Direkt vom Handy importieren (ChatGPT-App & Co.)
+
+`POST /api/import/text` nimmt die **rohe Antwort eines KI-Tools** entgegen, also Codeblock, Begleittext und alles. Der Vokabeltrainer sucht sich das JSON selbst heraus und legt sofort einen Vokabelsatz an. Die Schnittstelle braucht keine PIN und ist nur für das Heimnetz gedacht.
+
+| Aufruf | Wirkung |
+|---|---|
+| `POST /api/import/text` | neuer Satz. Der Name kommt aus `"name"` im JSON, sonst wird „Import TT.MM.JJJJ HH:MM“ verwendet |
+| `POST /api/import/text?name=Unit%207` | neuer Satz mit diesem Namen |
+| `POST /api/import/text?set_id=3` | an Satz 3 anhängen |
+
+Der Body ist Text (`text/plain`) oder `{"text": "..."}`. Die Antwort ist Klartext, zum Beispiel `✅ 12 Vokabeln in „Unit 5“ importiert.`
+Statt JSON funktionieren auch Zeilen im Format `deutsch = englisch`.
+
+### Einrichtung mit der Android-App „HTTP Shortcuts“ (kostenlos, Play Store)
+
+1. **Variable anlegen:** Unter ⋮ → *Variables* → **+** → Typ *Text* wählen, als Name `vokabeln` eintragen. In den Optionen der Variable **„Allow receiving value from Share dialog“** bzw. „Teilen“ aktivieren.
+2. **Shortcut anlegen:** Auf **+** tippen, *Regular Shortcut* wählen und als Namen „Vokabeln importieren“ eintragen.
+   - *Basic Request Settings*: Method **POST**, URL `http://<unraid-ip>:8099/api/import/text`
+   - *Request Body*: Typ **Custom Text**, Content-Type `text/plain`, als Inhalt nur die Variable `{vokabeln}` einfügen
+   - *Response Handling*: **Show response in dialog** bzw. als Toast
+3. **Benutzen:**
+   - In der ChatGPT-App das Foto der Vokabelseite hochladen und die Anleitung aus der Verwaltung dazu einfügen.
+   - Die Antwort lange drücken und **Teilen → HTTP Shortcuts → „Vokabeln importieren“** wählen. Falls die App kein Teilen anbietet: Antwort kopieren, Shortcut antippen, einfügen.
+   - Es erscheint „✅ … Vokabeln importiert“. Zum Kontrollieren und Korrigieren in die Verwaltung gehen.
+
+Tipp: Die Anleitung lässt sich in ChatGPT als **Projekt-Anweisung** oder in den **benutzerdefinierten Hinweisen** speichern. Dann reicht künftig das Foto allein.
+
 ## Einstellungen (docker-compose.yml)
 
 | Variable          | Standard            | Bedeutung                                      |
@@ -161,5 +188,6 @@ Die Seite lässt sich auch per Webseiten-Karte (iframe) in ein Dashboard einbind
 | POST    | `/api/finish`                | Ergebnis einer Übung speichern         |
 | GET     | `/api/stats`                 | Statistik (z. B. für Home Assistant)   |
 | POST    | `/api/import/json` 🔒        | Vokabeln importieren (neu oder anhängen) |
+| POST    | `/api/import/text`           | Rohe KI-Antwort importieren (ohne PIN, für Handy-Shortcuts) |
 
 🔒 = benötigt den Header `X-Admin-Pin`, wenn eine PIN gesetzt ist.
