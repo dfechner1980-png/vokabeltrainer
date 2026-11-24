@@ -37,8 +37,8 @@ function el(tag, props = {}, ...children) {
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
   $("view-" + view).classList.remove("hidden");
-  document.querySelectorAll(".nav").forEach((b) =>
-    b.classList.toggle("active", b.dataset.view === view || (view !== "admin" && b.dataset.view === "start")));
+  const tab = { learnlist: "learn", quiz: "start", round: "start" }[view] || view;
+  document.querySelectorAll(".nav").forEach((b) => b.classList.toggle("active", b.dataset.view === tab));
 }
 
 function msg(id, text, ok = false) {
@@ -56,15 +56,16 @@ function shuffle(arr) {
 }
 
 // ------------------------------------------------------------ Auswahl
-async function loadStart() {
-  show("start");
-  msg("start-msg", "");
+let lastSelection = [];
+
+async function renderSetList(listId, emptyId) {
   const sets = await api("/api/sets");
-  const list = $("set-list");
+  const list = $(listId);
   list.replaceChildren();
-  $("no-sets").classList.toggle("hidden", sets.length > 0);
+  $(emptyId).classList.toggle("hidden", sets.length > 0);
   for (const s of sets) {
-    const cb = el("input", { type: "checkbox", value: s.id });
+    const cb = el("input", { type: "checkbox", value: s.id, checked: lastSelection.includes(s.id) });
+    cb.onchange = () => { lastSelection = selectedIds(listId); };
     cb.dataset.name = s.name;
     const info = s.difficult ? ` · ${s.difficult} mit Übungsbedarf` : "";
     list.append(el("label", { className: "set-item" }, cb,
@@ -73,27 +74,45 @@ async function loadStart() {
   }
 }
 
-$("btn-all").onclick = () => {
-  const boxes = [...document.querySelectorAll("#set-list input")];
+function selectedIds(listId) {
+  return [...document.querySelectorAll(`#${listId} input:checked`)].map((b) => +b.value);
+}
+
+function toggleAll(listId) {
+  const boxes = [...document.querySelectorAll(`#${listId} input`)];
   const all = boxes.every((b) => b.checked);
   boxes.forEach((b) => (b.checked = !all));
-};
+  lastSelection = selectedIds(listId);
+}
+
+async function loadStart() {
+  show("start");
+  msg("start-msg", "");
+  await renderSetList("set-list", "no-sets");
+}
+
+$("btn-all").onclick = () => toggleAll("set-list");
 
 $("btn-start").onclick = async () => {
   const boxes = [...document.querySelectorAll("#set-list input:checked")];
   if (!boxes.length) return msg("start-msg", "Bitte mindestens einen Vokabelsatz auswählen.");
+  await startQuiz(boxes.map((b) => +b.value), boxes.map((b) => b.dataset.name),
+    $("opt-difficult").checked, $("opt-shuffle").checked, "start-msg");
+};
+
+async function startQuiz(setIds, setNames, onlyDifficult, doShuffle, msgId) {
   const words = await api("/api/quiz", {
     method: "POST",
-    body: { set_ids: boxes.map((b) => +b.value), only_difficult: $("opt-difficult").checked },
+    body: { set_ids: setIds, only_difficult: onlyDifficult },
   });
   if (!words.length) {
-    return msg("start-msg", $("opt-difficult").checked
+    return msg(msgId, onlyDifficult
       ? "Super – in diesen Sätzen gibt es gerade keine Wörter mit Übungsbedarf! 🎉"
       : "Diese Sätze enthalten noch keine Vokabeln.");
   }
-  const order = $("opt-shuffle").checked ? shuffle(words) : words;
+  const order = doShuffle ? shuffle(words) : words;
   state.quiz = {
-    setNames: boxes.map((b) => b.dataset.name),
+    setNames,
     total: words.length,
     round: 1,
     queue: order,
@@ -104,7 +123,66 @@ $("btn-start").onclick = async () => {
   };
   show("quiz");
   showQuestion();
+}
+
+// ------------------------------------------------------------ Lernen
+async function loadLearn() {
+  show("learn");
+  msg("learn-msg", "");
+  await renderSetList("learn-set-list", "learn-no-sets");
+}
+
+$("learn-all").onclick = () => toggleAll("learn-set-list");
+
+$("learn-go").onclick = async () => {
+  const ids = selectedIds("learn-set-list");
+  if (!ids.length) return msg("learn-msg", "Bitte mindestens eine Unit auswählen.");
+  const words = await api("/api/learn", { method: "POST", body: { set_ids: ids, only_difficult: $("learn-difficult").checked } });
+  if (!words.length) {
+    return msg("learn-msg", $("learn-difficult").checked
+      ? "In diesen Units gibt es gerade keine Wörter mit Übungsbedarf! 🎉"
+      : "Diese Units enthalten noch keine Vokabeln.");
+  }
+  state.learn = { ids, names: [...new Set(words.map((w) => w.set_name))], words };
+  renderLearnList();
+  show("learnlist");
+  window.scrollTo(0, 0);
 };
+
+function renderLearnList() {
+  const { words } = state.learn;
+  const box = $("learn-list");
+  box.replaceChildren();
+  let current = null, table = null;
+  for (const w of words) {
+    if (w.set_id !== current) {
+      current = w.set_id;
+      table = el("div", { className: "learn-table" });
+      box.append(el("h3", { textContent: `${w.set_name}` }), table);
+    }
+    const de = el("span", { className: "learn-de cover-de", textContent: w.de });
+    const en = el("span", { className: "learn-en cover-en", textContent: w.en });
+    for (const c of [de, en]) c.onclick = () => c.classList.toggle("revealed");
+    table.append(el("div", { className: "learn-row" + (w.difficult ? " need" : "") },
+      el("span", { className: "dot", textContent: w.difficult ? "🔴" : "", title: w.difficult ? "Übungsbedarf" : "" }),
+      de, en));
+  }
+  applyCover();
+}
+
+function applyCover() {
+  $("learn-list").classList.toggle("hide-en", $("learn-hide").checked);
+  $("learn-list").classList.toggle("hide-de", $("learn-hide-de").checked);
+  document.querySelectorAll("#learn-list .revealed").forEach((e) => e.classList.remove("revealed"));
+}
+
+$("learn-hide").onchange = () => { if ($("learn-hide").checked) $("learn-hide-de").checked = false; applyCover(); };
+$("learn-hide-de").onchange = () => { if ($("learn-hide-de").checked) $("learn-hide").checked = false; applyCover(); };
+$("learn-reveal").onclick = () => document.querySelectorAll("#learn-list .learn-de, #learn-list .learn-en")
+  .forEach((e) => e.classList.add("revealed"));
+$("learn-back").onclick = loadLearn;
+$("learn-quiz").onclick = () => startQuiz(state.learn.ids, state.learn.names, $("learn-difficult").checked, true, "learn-msg")
+  .then(() => { if (!state.quiz) show("learn"); });
 
 // ------------------------------------------------------------ Abfrage
 function showQuestion() {
@@ -362,7 +440,7 @@ document.querySelectorAll(".nav").forEach((b) => {
   b.onclick = () => {
     if (state.quiz && !confirm("Die laufende Abfrage wird abgebrochen. Weiter?")) return;
     state.quiz = null;
-    b.dataset.view === "admin" ? loadAdmin() : loadStart();
+    ({ admin: loadAdmin, learn: loadLearn, start: loadStart })[b.dataset.view]();
   };
 });
 $("home-link").onclick = () => { if (!state.quiz) loadStart(); };

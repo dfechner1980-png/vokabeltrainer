@@ -51,6 +51,11 @@ docker compose up -d     # nutzt das fertige Image; zum lokalen Bauen in docker-
 - `( )` markiert optionale Teile: `(to) go` akzeptiert sowohl „go“ als auch „to go“.
 - Vokabeln lassen sich einzeln bearbeiten oder löschen. Die Spalte ✔ / ✘ zeigt, wie oft ein Wort beim ersten Versuch richtig oder falsch war. Rot bedeutet Übungsbedarf.
 
+**Lernen**
+- Eine oder mehrere Units auswählen, dann erscheint die Vokabelliste nach Units gruppiert. Wörter mit Übungsbedarf sind mit 🔴 markiert.
+- Zum Selbsttest lässt sich „Englisch verdecken“ oder „Deutsch verdecken“ einschalten. Ein Antippen deckt das einzelne Wort auf.
+- „Jetzt abfragen“ startet direkt die Abfrage mit denselben Units. Die Auswahl der Units bleibt beim Wechsel zwischen Lernen und Üben erhalten.
+
 **Üben**
 - Einen oder mehrere Sätze auswählen. Optional die Reihenfolge mischen oder nur Wörter mit Übungsbedarf abfragen.
 - Das deutsche Wort wird angezeigt, die englische Übersetzung eintippen, dann Enter oder „Prüfen“.

@@ -14,6 +14,7 @@
   <header>
     <h1 id="home-link">📚 Vokabeltrainer</h1>
     <nav>
+      <button class="nav" data-view="learn">Lernen</button>
       <button class="nav" data-view="start">Üben</button>
       <button class="nav" data-view="admin">Verwalten</button>
     </nav>
@@ -34,6 +35,38 @@
         <button id="btn-start" class="primary big">Los geht’s!</button>
       </div>
       <p id="start-msg" class="msg"></p>
+    </section>
+
+    <!-- Lernen: Auswahl -->
+    <section id="view-learn" class="view hidden">
+      <h2>Welche Vokabeln möchtest du dir anschauen?</h2>
+      <div id="learn-set-list" class="set-list"></div>
+      <p id="learn-no-sets" class="muted hidden">Noch keine Vokabelsätze vorhanden.</p>
+      <div class="options">
+        <label><input type="checkbox" id="learn-difficult"> Nur Wörter mit Übungsbedarf</label>
+      </div>
+      <div class="row">
+        <button id="learn-all" class="secondary">Alle auswählen</button>
+        <button id="learn-go" class="primary big">Anschauen</button>
+      </div>
+      <p id="learn-msg" class="msg"></p>
+    </section>
+
+    <!-- Lernen: Liste -->
+    <section id="view-learnlist" class="view hidden">
+      <button id="learn-back" class="link">← andere Units auswählen</button>
+      <div class="card">
+        <div class="row spread learn-tools">
+          <label class="toggle"><input type="checkbox" id="learn-hide"> Englisch verdecken</label>
+          <label class="toggle"><input type="checkbox" id="learn-hide-de"> Deutsch verdecken</label>
+          <button id="learn-reveal" class="secondary">Alle aufdecken</button>
+        </div>
+        <p class="muted small" id="learn-hint">Verdeckte Wörter antippen, um sie aufzudecken. 🔴 = Übungsbedarf</p>
+        <div id="learn-list"></div>
+      </div>
+      <div class="row">
+        <button id="learn-quiz" class="primary big">Jetzt abfragen ➜</button>
+      </div>
     </section>
 
     <!-- Abfrage -->

@@ -313,6 +313,23 @@ def start_quiz(body: QuizIn):
     return [dict(r) for r in rows]
 
 
+@app.post("/api/learn")
+def learn(body: QuizIn):
+    """Vokabeln mit Lösung zum Anschauen und Lernen."""
+    if not body.set_ids:
+        raise HTTPException(400, "Bitte mindestens einen Vokabelsatz auswählen")
+    marks = ",".join("?" * len(body.set_ids))
+    sql = f"""SELECT w.id, w.de, w.en, w.last_result, s.id AS set_id, s.name AS set_name
+              FROM words w JOIN sets s ON s.id = w.set_id
+              WHERE w.set_id IN ({marks})"""
+    if body.only_difficult:
+        sql += " AND w.last_result = 0"
+    sql += " ORDER BY s.created DESC, s.id DESC, w.id"
+    with db() as con:
+        rows = con.execute(sql, body.set_ids).fetchall()
+    return [dict(r, difficult=r["last_result"] == 0) for r in rows]
+
+
 @app.post("/api/check")
 def check(body: CheckIn):
     with db() as con:

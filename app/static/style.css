@@ -114,3 +114,27 @@ td.need { color: var(--bad); font-weight: 700; }
   .word { font-size: 1.6rem; }
   table.words th:nth-child(3), table.words td:nth-child(3) { display: none; }
 }
+
+/* ------------------------------------------------------------ Lernen */
+.learn-tools { margin-top: 0; justify-content: flex-start; gap: 16px; }
+.learn-tools input { flex: none !important; min-width: 0 !important; }
+.toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.toggle input { accent-color: var(--primary); width: 18px; height: 18px; }
+#learn-list h3 { margin: 18px 0 6px; color: var(--primary); }
+#learn-list h3:first-child { margin-top: 6px; }
+.learn-table { display: flex; flex-direction: column; }
+.learn-row { display: grid; grid-template-columns: 22px 1fr 1fr; gap: 10px; align-items: center;
+  padding: 10px 4px; border-bottom: 1px solid var(--border); font-size: 1.15rem; }
+.learn-row:last-child { border-bottom: none; }
+.learn-row .dot { font-size: .7rem; text-align: center; }
+.learn-de { font-weight: 600; }
+.learn-en { color: var(--primary); font-weight: 600; }
+.learn-de, .learn-en { border-radius: 8px; padding: 2px 6px; word-break: break-word; transition: background .15s; }
+#learn-list.hide-en .learn-en:not(.revealed),
+#learn-list.hide-de .learn-de:not(.revealed) {
+  color: transparent; background: var(--border); cursor: pointer; user-select: none;
+}
+#learn-list.hide-en .learn-en:not(.revealed)::after,
+#learn-list.hide-de .learn-de:not(.revealed)::after { content: ""; }
+.nav { padding: 6px 12px; }
+@media (max-width: 420px) { header h1 { font-size: 1.1rem; } .nav { padding: 6px 10px; font-size: .95rem; } }
