@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3b5bdb">
+  <title>Vokabeltrainer</title>
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="icon" href="/static/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1 id="home-link">📚 Vokabeltrainer</h1>
+    <nav>
+      <button class="nav" data-view="start">Üben</button>
+      <button class="nav" data-view="admin">Verwalten</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Auswahl -->
+    <section id="view-start" class="view">
+      <h2>Was möchtest du üben?</h2>
+      <div id="set-list" class="set-list"></div>
+      <p id="no-sets" class="muted hidden">Noch keine Vokabelsätze vorhanden. Unter „Verwalten“ anlegen.</p>
+      <div class="options">
+        <label><input type="checkbox" id="opt-shuffle" checked> Reihenfolge mischen</label>
+        <label><input type="checkbox" id="opt-difficult"> Nur Wörter mit Übungsbedarf</label>
+      </div>
+      <div class="row">
+        <button id="btn-all" class="secondary">Alle auswählen</button>
+        <button id="btn-start" class="primary big">Los geht’s!</button>
+      </div>
+      <p id="start-msg" class="msg"></p>
+    </section>
+
+    <!-- Abfrage -->
+    <section id="view-quiz" class="view hidden">
+      <div class="progress-info">
+        <span id="round-label"></span>
+        <span id="count-label"></span>
+      </div>
+      <div class="progress"><div id="progress-bar"></div></div>
+
+      <div class="card">
+        <div id="q-set" class="muted small"></div>
+        <div class="label">Deutsch</div>
+        <div id="q-de" class="word"></div>
+        <div class="label">Englisch</div>
+        <input id="q-answer" type="text" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Übersetzung eingeben …">
+        <div id="feedback" class="feedback hidden"></div>
+        <div class="row">
+          <button id="btn-check" class="primary big">Prüfen</button>
+          <button id="btn-next" class="primary big hidden">Weiter ➜</button>
+        </div>
+      </div>
+      <button id="btn-quit" class="link">Abbrechen</button>
+    </section>
+
+    <!-- Rundenende -->
+    <section id="view-round" class="view hidden">
+      <div class="card center">
+        <div id="round-emoji" class="emoji"></div>
+        <h2 id="round-title"></h2>
+        <p id="round-text"></p>
+        <ul id="round-wrong" class="wrong-list"></ul>
+        <button id="btn-repeat" class="primary big">Jetzt wiederholen</button>
+        <button id="btn-done" class="secondary hidden">Fertig</button>
+      </div>
+    </section>
+
+    <!-- Verwaltung -->
+    <section id="view-admin" class="view hidden">
+      <div id="pin-box" class="card hidden">
+        <h2>Verwaltung</h2>
+        <p>Bitte PIN eingeben.</p>
+        <input id="pin-input" type="password" inputmode="numeric" autocomplete="off">
+        <div class="row"><button id="btn-pin" class="primary">Weiter</button></div>
+        <p id="pin-msg" class="msg"></p>
+      </div>
+
+      <div id="admin-main" class="hidden">
+        <div class="card">
+          <h2>Neuer Vokabelsatz</h2>
+          <input id="new-name" type="text" placeholder="Name, z. B. Unit 3 – At school">
+          <textarea id="new-text" rows="8" placeholder="Eine Vokabel pro Zeile, z. B.&#10;Hund = dog&#10;gehen = (to) go&#10;Schule = school&#10;rennen = (to) run / (to) race"></textarea>
+          <p class="muted small">Trennzeichen: <b>=</b>, <b>;</b> oder Tab (aus Excel kopieren geht auch).
+            Mehrere richtige Antworten mit <b>/</b> trennen. Teile in <b>( )</b> sind optional.</p>
+          <div class="row"><button id="btn-create" class="primary">Anlegen</button></div>
+          <p id="create-msg" class="msg"></p>
+        </div>
+
+        <div class="card">
+          <h2>Vorhandene Sätze</h2>
+          <div id="admin-sets"></div>
+        </div>
+      </div>
+
+      <div id="set-detail" class="hidden">
+        <button id="btn-back" class="link">← zurück zur Übersicht</button>
+        <div class="card">
+          <div class="row spread">
+            <input id="detail-name" type="text">
+            <button id="btn-rename" class="secondary">Umbenennen</button>
+          </div>
+          <table class="words">
+            <thead><tr><th>Deutsch</th><th>Englisch</th><th title="richtig / falsch beim ersten Versuch">✔ / ✘</th><th></th></tr></thead>
+            <tbody id="detail-words"></tbody>
+          </table>
+          <h3>Weitere Vokabeln hinzufügen</h3>
+          <textarea id="add-text" rows="5" placeholder="deutsch = englisch"></textarea>
+          <div class="row spread">
+            <button id="btn-add" class="primary">Hinzufügen</button>
+            <button id="btn-delete-set" class="danger">Satz löschen</button>
+          </div>
+          <p id="detail-msg" class="msg"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

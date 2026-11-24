@@ -1,0 +1,17 @@
+# Alternative zum Unraid-Template, z. B. mit dem "Compose Manager"-Plugin oder auf einem anderen Docker-Host
+services:
+  vokabeltrainer:
+    image: ghcr.io/dfechner1980-png/vokabeltrainer:latest
+    # build: .                  # stattdessen lokal bauen
+    container_name: vokabeltrainer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMIN_PIN=1234          # PIN für den Bereich "Verwalten" – bitte ändern (leer = keine PIN)
+      - CASE_SENSITIVE=false    # true = Groß-/Kleinschreibung muss stimmen
+      - TZ=Europe/Berlin
+      - PUID=99
+      - PGID=100
+    volumes:
+      - /mnt/user/appdata/vokabeltrainer:/data
